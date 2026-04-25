@@ -4,6 +4,16 @@
 #include <cstddef>
 #include <algorithm>
 #include <cmath>
+#include <cassert>
+#include <utility>
+#include <chrono>
+
+struct Color
+{
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+};
 
 struct Vec2
 {
@@ -14,10 +24,31 @@ struct Vec2
         return Vec2{x - rhs.x, y - rhs.y};
     }
 };
+
 float cross_z(Vec2 lhs, Vec2 rhs)
 {
     return lhs.x * rhs.y - lhs.y * rhs.x;
 }
+
+struct Vec3
+{
+    float x;
+    float y;
+    float z;
+};
+
+struct Barycentric
+{
+    float alpha;
+    float beta;
+    float gamma;
+};
+
+struct Vertex
+{
+    Vec2 position;
+    Color color;
+};
 
 // p to test
 // a->p (p.x - a.x, p.y -a. y, 0)
@@ -29,28 +60,73 @@ float edge_function(Vec2 a, Vec2 b, Vec2 p)
     return cross_z(p - a, b - a);
 }
 
-// a, b, c 三角形的三个顶点
-// p 当前像素中心点
-bool inside_triangle(Vec2 a, Vec2 b, Vec2 c, Vec2 p)
+// a->b是否属于top-left边
+bool is_top_left_edge(Vec2 a, Vec2 b)
 {
-    float w0 = edge_function(a, b, p);
-    float w1 = edge_function(b, c, p);
-    float w2 = edge_function(c, a, p);
-    // todo: 共边的情况
-    // Top-left fill rule for shared edges
-    if (w0 >= 0 && w1 >= 0 && w2 >= 0)
+    float dx = b.x - a.x;
+    float dy = b.y - a.y;
+    return dy < 0 || (dy == 0 && dx > 0);
+}
+
+bool edge_accepts_pixel(float edge_value, Vec2 a, Vec2 b)
+{
+    if (edge_value > 0)
         return true;
-    if (w0 <= 0 && w1 <= 0 && w2 <= 0)
+    else if (edge_value == 0 && is_top_left_edge(a, b))
         return true;
     return false;
 }
 
-void draw_triangle(std::vector<unsigned char> &framebuffer, size_t width, size_t height, Vec2 a, Vec2 b, Vec2 c, unsigned char r_color, unsigned char g_color, unsigned char b_color)
+// a, b, c 三角形的三个顶点
+// p 当前像素中心点
+bool inside_triangle(Vec2 a, Vec2 b, Vec2 c, Vec2 p)
 {
-    float min_x = std::min({a.x, b.x, c.x});
-    float max_x = std::max({a.x, b.x, c.x});
-    float min_y = std::min({a.y, b.y, c.y});
-    float max_y = std::max({a.y, b.y, c.y});
+    // Top-left fill rule for shared edges
+    float w0 = edge_function(a, b, p);
+    if (!edge_accepts_pixel(w0, a, b))
+        return false;
+    float w1 = edge_function(b, c, p);
+    if (!edge_accepts_pixel(w1, b, c))
+        return false;
+    float w2 = edge_function(c, a, p);
+    if (!edge_accepts_pixel(w2, c, a))
+        return false;
+    return true;
+}
+
+Barycentric barycentric(Vec2 a, Vec2 b, Vec2 c, Vec2 p)
+{
+    float sum = edge_function(a, b, c);
+    assert(sum != 0);
+    float alpha = edge_function(p, b, c) / sum;
+    float beta = edge_function(a, p, c) / sum;
+    float gamma = edge_function(a, b, p) / sum;
+    return {alpha, beta, gamma};
+}
+
+// deprecated: use top-left coverage now
+// bool inside_barycentric(Barycentric weights)
+// {
+//     return weights.alpha >= 0 && weights.beta >= 0 && weights.gamma >= 0;
+// }
+
+void draw_triangle(std::vector<unsigned char> &framebuffer, size_t width, size_t height, Vertex a, Vertex b, Vertex c)
+{
+    // clockwise
+    float area = edge_function(a.position, b.position, c.position);
+    if (area == 0) // 将来需要epsilon或fix-points
+    {
+        std::cerr << "area == 0\n";
+        return;
+    }
+    else if (area < 0)
+    {
+        std::swap(b, c);
+    }
+    float min_x = std::min({a.position.x, b.position.x, c.position.x});
+    float max_x = std::max({a.position.x, b.position.x, c.position.x});
+    float min_y = std::min({a.position.y, b.position.y, c.position.y});
+    float max_y = std::max({a.position.y, b.position.y, c.position.y});
 
     min_x = std::clamp(min_x, 0.0f, static_cast<float>(width));
     max_x = std::clamp(max_x, 0.0f, static_cast<float>(width));
@@ -62,11 +138,12 @@ void draw_triangle(std::vector<unsigned char> &framebuffer, size_t width, size_t
         for (size_t x = std::floor(min_x); x < std::ceil(max_x); x++)
         {
             Vec2 p = {x + 0.5f, y + 0.5f};
-            if (inside_triangle(a, b, c, p))
+            if (inside_triangle(a.position, b.position, c.position, p))
             {
-                framebuffer[3 * (width * y + x)] = r_color;
-                framebuffer[3 * (width * y + x) + 1] = g_color;
-                framebuffer[3 * (width * y + x) + 2] = b_color;
+                auto [alpha, beta, gamma] = barycentric(a.position, b.position, c.position, p);
+                framebuffer[3 * (width * y + x)] = alpha * a.color.r + beta * b.color.r + gamma * c.color.r;
+                framebuffer[3 * (width * y + x) + 1] = alpha * a.color.g + beta * b.color.g + gamma * c.color.g;
+                framebuffer[3 * (width * y + x) + 2] = alpha * a.color.b + beta * b.color.b + gamma * c.color.b;
             }
         }
     }
@@ -126,10 +203,14 @@ int main()
                       static_cast<unsigned char>(0),
                       static_cast<unsigned char>(0));
 
-    Vec2 a{100.0f, 100.0f};
-    Vec2 b{700.0f, 150.0f};
-    Vec2 c{300.0f, 300.0f};
-    draw_triangle(framebuffer, WIDTH, HEIGHT, a, b, c, 255, 0, 0);
+    Vertex a{{100.0f, 100.0f}, {255, 0, 0}};
+    Vertex b{{700.0f, 150.0f}, {0, 255, 0}};
+    Vertex c{{300.0f, 300.0f}, {0, 0, 255}};
+    auto start = std::chrono::steady_clock::now();
+    draw_triangle(framebuffer, WIDTH, HEIGHT, a, b, c);
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    std::cout << elapsed.count() << " us\n";
 
     if (write_ppm(FILENAME, WIDTH, HEIGHT, framebuffer))
     {
