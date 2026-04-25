@@ -1,0 +1,4 @@
+*.ppm
+build
+soft-rasterization
+AGENTS.md
