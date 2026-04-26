@@ -3,3 +3,5 @@
 - [ ] MSAA
 - [x] barycentric
 - [x] left-top rule
+- [ ] SIMD优化
+- [x] split header
