@@ -49,6 +49,7 @@ struct Vec4
         };
         float m[4];
     };
+    inline Vec3 xyz() { return {{{x, y, z}}}; }
     float &operator[](size_t i) { return m[i]; }
     const float &operator[](size_t i) const { return m[i]; }
     static Vec4 from_point(Vec3 v);  // w = 1
