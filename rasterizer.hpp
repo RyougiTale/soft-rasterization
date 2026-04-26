@@ -18,7 +18,7 @@ struct Barycentric
 
 struct Vertex
 {
-    Vec2 position;
+    Vec3 position;
     Color color;
 };
 

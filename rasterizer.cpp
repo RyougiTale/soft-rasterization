@@ -61,7 +61,7 @@ Barycentric barycentric(Vec2 a, Vec2 b, Vec2 c, Vec2 p)
 void draw_triangle(std::vector<unsigned char> &framebuffer, size_t width, size_t height, Vertex a, Vertex b, Vertex c)
 {
     // clockwise
-    float area = edge_function(a.position, b.position, c.position);
+    float area = edge_function(a.position.xy(), b.position.xy(), c.position.xy());
     if (area == 0) // 将来需要epsilon或fix-points
     {
         std::cerr << "area == 0\n";
@@ -86,9 +86,9 @@ void draw_triangle(std::vector<unsigned char> &framebuffer, size_t width, size_t
         for (size_t x = std::floor(min_x); x < std::ceil(max_x); x++)
         {
             Vec2 p = {x + 0.5f, y + 0.5f};
-            if (inside_triangle(a.position, b.position, c.position, p))
+            if (inside_triangle(a.position.xy(), b.position.xy(), c.position.xy(), p))
             {
-                auto [alpha, beta, gamma] = barycentric(a.position, b.position, c.position, p);
+                auto [alpha, beta, gamma] = barycentric(a.position.xy(), b.position.xy(), c.position.xy(), p);
                 framebuffer[3 * (width * y + x)] = alpha * a.color.r + beta * b.color.r + gamma * c.color.r;
                 framebuffer[3 * (width * y + x) + 1] = alpha * a.color.g + beta * b.color.g + gamma * c.color.g;
                 framebuffer[3 * (width * y + x) + 2] = alpha * a.color.b + beta * b.color.b + gamma * c.color.b;

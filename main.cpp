@@ -6,8 +6,6 @@
 #include "math.hpp"
 #include "rasterizer.hpp"
 
-
-
 // pixels: contiguous RGB arrays
 bool write_ppm(const char *filename, size_t width, size_t height, const std::vector<unsigned char> &pixels)
 {
@@ -62,10 +60,18 @@ int main()
                       static_cast<unsigned char>(0),
                       static_cast<unsigned char>(0));
 
-    Vertex a{{100.0f, 100.0f}, {255, 0, 0}};
-    Vertex b{{700.0f, 150.0f}, {0, 255, 0}};
-    Vertex c{{300.0f, 300.0f}, {0, 0, 255}};
+    Vertex a{{{{100.0f, 100.0f, 0.0f}}}, {255, 0, 0}};
+    Vertex b{{{{700.0f, 150.0f, 0.0f}}}, {0, 255, 0}};
+    Vertex c{{{{300.0f, 300.0f, 0.0f}}}, {0, 0, 255}};
     auto start = std::chrono::steady_clock::now();
+    Mat4 model = Mat4::rotate_z(PI / 6);
+    auto a_model = model * Vec4::from_point(a.position);
+    a.position = Vec3{{{a_model.x, a_model.y, a_model.z}}};
+    auto b_model = model * Vec4::from_point(b.position);
+    b.position = Vec3{{{b_model.x, b_model.y, b_model.z}}};
+    auto c_model = model * Vec4::from_point(c.position);
+    c.position = Vec3{{{c_model.x, c_model.y, c_model.z}}};
+
     draw_triangle(framebuffer, WIDTH, HEIGHT, a, b, c);
     auto end = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
