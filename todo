@@ -1,6 +1,6 @@
 ## road
 - [x] Put a single triangle on screen using barycentric rasterization. No camera, no matrices — just three 2D points.
-- [ ] Add the MVP pipeline and draw a spinning cube.
+- [x] Add the MVP pipeline and draw a spinning cube.
 - [ ] Add the Z-buffer. Draw two intersecting triangles and verify correct occlusion.
 - [ ] Add perspective-correct interpolation. Test it explicitly — draw a checkered quad receding into the distance; if the checks distort, you got it wrong. This is the step where half of self-taught graphics people have a subtle bug they never notice.
 - [ ] Load an OBJ file and texture it. Implement nearest-neighbor, then bilinear, then mipmaps + trilinear. Spend time looking at the artifacts at each stage. Make a scene that deliberately induces texture aliasing.

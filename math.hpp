@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cmath>
 
 constexpr float PI = 3.14159265358979323846f;
 
@@ -31,9 +32,28 @@ struct Vec3
         };
         float m[3];
     };
+    Vec3() = default;
+    Vec3(float a, float b, float c) : x(a), y(b), z(c) {}
     inline Vec2 xy() { return {x, y}; }
     float &operator[](size_t i) { return m[i]; }
     const float &operator[](size_t i) const { return m[i]; }
+    Vec3 operator-(Vec3 rhs) const
+    {
+        return Vec3(x - rhs.x, y - rhs.y, z - rhs.z);
+    }
+    Vec3 operator-() const{
+        return Vec3{-x,-y,-z};
+    }
+    Vec3 normalize() const
+    {
+        float u = std::sqrt(x * x + y * y + z * z);
+
+        return Vec3(x / u, y / u, z / u);
+    }
+    Vec3 cross(Vec3 rhs) const
+    {
+        return Vec3{y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x};
+    }
 };
 
 struct Vec4
@@ -49,7 +69,9 @@ struct Vec4
         };
         float m[4];
     };
-    inline Vec3 xyz() { return {{{x, y, z}}}; }
+    Vec4() = default;
+    Vec4(float a, float b, float c, float d) : x(a), y(b), z(c), w(d) {}
+    inline Vec3 xyz() { return {x, y, z}; }
     float &operator[](size_t i) { return m[i]; }
     const float &operator[](size_t i) const { return m[i]; }
     static Vec4 from_point(Vec3 v);  // w = 1
@@ -64,6 +86,8 @@ struct Mat4
     static Mat4 rotate_x(float theta);
     static Mat4 rotate_y(float theta);
     static Mat4 rotate_z(float theta);
+    static Mat4 look_at(Vec3 eye, Vec3 target, Vec3 up);
+    static Mat4 perspective(float fov_y, float aspect, float near, float far);
     float *operator[](size_t i)
     {
         return m[i];
@@ -96,4 +120,7 @@ struct Mat4
         }
         return ret;
     }
+
+    // Vec3 transform_point(Vec3 v) const;
+    // Vec3 transform_vector(Vec3 v) const;
 };

@@ -5,6 +5,15 @@
 #include <cmath>
 #include <utility>
 
+Vec3 ndc_to_screen(Vec3 ndc, size_t W, size_t H)
+{
+    Vec3 ret;
+    ret.x = (ndc.x + 1) * W / 2;
+    ret.y = (1 - ndc.y) * H / 2;
+    ret.z = ndc.z;
+    return ret;
+}
+
 float edge_function(Vec2 a, Vec2 b, Vec2 p)
 {
     return cross_z(p - a, b - a);

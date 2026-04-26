@@ -34,6 +34,7 @@ bool is_top_left_edge(Vec2 a, Vec2 b);
 
 bool edge_accepts_pixel(float edge_value, Vec2 a, Vec2 b);
 
+Vec3 ndc_to_screen(Vec3 ndc, size_t W, size_t H);
 // a, b, c 三角形的三个顶点
 // p 当前像素中心点
 bool inside_triangle(Vec2 a, Vec2 b, Vec2 c, Vec2 p);
